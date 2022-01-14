@@ -18,6 +18,9 @@ enum
   X_DIR, Y_DIR
 };
 
+/* MPI variables */
+int np, rank;
+
 /* global variables */
 int gridsize[2];
 double precision_goal;		/* precision_goal of solution */
@@ -232,6 +235,9 @@ int main(int argc, char **argv)
   
   // After starting the timer.
   MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &np);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  printf("Node %d of %d says: Hello world!\n", rank, np);
 
   Setup_Grid();
 
