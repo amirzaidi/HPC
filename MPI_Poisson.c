@@ -18,8 +18,16 @@ enum
   X_DIR, Y_DIR
 };
 
-/* MPI variables */
-int proc_count, proc_rank;
+/* process specific variables */
+int proc_rank;		/* rank of current process */
+int proc_coord[2];	/* coordinates of current process in processgrid */
+int proc_top, proc_right, proc_bottom, proc_left; /* ranks of neighbouring procs */
+
+/* MPI global variables */
+int P;				/* total number of processes */
+int P_grid[2];		/* processgrid dimensions */
+MPI_Comm grid_comm;	/* grid communicator */
+MPI_Status status;
 
 /* global variables */
 int gridsize[2];
@@ -83,11 +91,11 @@ void print_timer()
   if (timer_on)
   {
     stop_timer();
-    printf("(%i / %i) Elapsed processortime: %14.6f s (%5.1f%% CPU)\n", proc_rank, proc_count, wtime, 100.0 * ticks * (1.0 / CLOCKS_PER_SEC) / wtime);
+    printf("(%i / %i) Elapsed processortime: %14.6f s (%5.1f%% CPU)\n", proc_rank, P, wtime, 100.0 * ticks * (1.0 / CLOCKS_PER_SEC) / wtime);
     resume_timer();
   }
   else
-    printf("(%i / %i) Elapsed processortime: %14.6f s (%5.1f%% CPU)\n", proc_rank, proc_count, wtime, 100.0 * ticks * (1.0 / CLOCKS_PER_SEC) / wtime);
+    printf("(%i / %i) Elapsed processortime: %14.6f s (%5.1f%% CPU)\n", proc_rank, P, wtime, 100.0 * ticks * (1.0 / CLOCKS_PER_SEC) / wtime);
 }
 
 void Debug(char *mesg, int terminate)
@@ -96,6 +104,57 @@ void Debug(char *mesg, int terminate)
     printf("%s\n", mesg);
   if (terminate)
     exit(1);
+}
+
+void Setup_Proc_Grid(int argc, char **argv)
+{
+  int wrap_around[2];
+  int reorder;
+  
+  Debug("My_MPI_Init", 0);
+  
+  /* Retrieve the number of processes */
+  MPI_Comm_size(MPI_COMM_WORLD, &P); /* find out how many processes there are */
+  
+  /* Calculate the number of processes per column and per row for the grid */
+  if (argc > 2)
+  {
+    P_grid[X_DIR] = atoi(argv[1]);
+    P_grid[Y_DIR] = atoi(argv[2]);
+    if (P_grid[X_DIR] * P_grid[Y_DIR] != P)
+    {
+      Debug("ERROR: Process grid dimensions do not match with P", 1);
+    }
+  }
+  else
+  {
+    Debug("ERROR: Wrong parameter input", 1);
+  }
+  
+  /* Create process topology (2D grid) */
+  wrap_around[X_DIR] = 0;
+  wrap_around[Y_DIR] = 0;	/* do not connect first and last process */
+  reorder = 1;				/* reorder process ranks */
+  
+  MPI_Cart_create(MPI_COMM_WORLD, 2, P_grid, wrap_around, reorder, &grid_comm); /* Creates a new communicator
+  
+  /* Retrieve new rank and cartesian coordinates of this process */
+  MPI_Comm_rank(grid_comm, &proc_rank);	/* Rank of process in new communicator */
+  MPI_Cart_coords(grid_comm, proc_rank, 2, proc_coord);		/* Coordinates of process in new communicator */
+  
+  printf("(%i) (x,y)=(%i,%i)\n", proc_rank, proc_coord[X_DIR], proc_coord[Y_DIR]);
+  
+  /* Calculate ranks of neighbouring processes */
+  MPI_Cart_shift(grid_comm, Y_DIR, 1, &proc_top, &proc_bottom); /* Rank of processes proc_top and proc_bottom */
+  MPI_Cart_shift(grid_comm, X_DIR, 1, &proc_left, &proc_right); /* Rank of processes proc_left and proc_right */
+  
+  if (DEBUG)
+  {
+    printf("(%i) top %i, right %i, bottom %i, left %i\n",
+	  proc_rank, proc_top, proc_right, proc_bottom, proc_left);
+  }
+  
+  printf("(%i / %i) Hello world!\n", proc_rank, P);
 }
 
 void Setup_Grid()
@@ -222,7 +281,7 @@ void Solve()
     count++;
   }
 
-  printf("(%i / %i) Number of iterations: %i\n", proc_rank, proc_count, count);
+  printf("(%i / %i) Number of iterations: %i\n", proc_rank, P, count);
 }
 
 void Write_Grid()
@@ -258,9 +317,7 @@ void Clean_Up()
 int main(int argc, char **argv)
 {
   MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &proc_count);
-  MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
-  printf("(%i / %i) Hello world!\n", proc_rank, proc_count);
+  Setup_Proc_Grid(argc, argv);
   
   start_timer();
   
