@@ -226,14 +226,20 @@ void Clean_Up()
 }
 
 int main(int argc, char **argv)
-{
+{  
   start_timer();
+  
+  // After starting the timer.
+  MPI_Init(&argc, &argv);
 
   Setup_Grid();
 
   Solve();
 
   Write_Grid();
+  
+  // Before stopping the timer.
+  MPI_Finalize();
 
   print_timer();
 
