@@ -19,7 +19,7 @@ enum
 };
 
 /* MPI variables */
-int np, rank;
+int proc_count, proc_rank;
 
 /* global variables */
 int gridsize[2];
@@ -199,7 +199,7 @@ void Solve()
     count++;
   }
 
-  printf("Number of iterations : %i\n", count);
+  printf("(%i / %i) Number of iterations: %i\n", proc_rank, proc_count, count);
 }
 
 void Write_Grid()
@@ -235,9 +235,9 @@ int main(int argc, char **argv)
   
   // After starting the timer.
   MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &np);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  printf("Node %d of %d says: Hello world!\n", rank, np);
+  MPI_Comm_size(MPI_COMM_WORLD, &proc_count);
+  MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
+  printf("(%i / %i) Hello world!\n", proc_rank, proc_count);
 
   Setup_Grid();
 
