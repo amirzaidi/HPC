@@ -1,5 +1,5 @@
 /*
- * SEQ_Poisson.c
+ * MPI_Poisson.c
  * 2D Poison equation solver
  */
 
