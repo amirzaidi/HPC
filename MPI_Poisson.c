@@ -154,7 +154,7 @@ void Setup_Proc_Grid(int argc, char **argv)
 	  proc_rank, proc_top, proc_right, proc_bottom, proc_left);
   }
   
-  printf("(%i / %i) Hello world!\n", proc_rank, P);
+  // printf("(%i / %i) Hello world!\n", proc_rank, P);
 }
 
 void Setup_Grid()
