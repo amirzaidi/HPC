@@ -235,27 +235,25 @@ void Clean_Up()
 }
 
 int main(int argc, char **argv)
-{  
-  start_timer();
-  
-  // After starting the timer.
+{
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &proc_count);
   MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
   printf("(%i / %i) Hello world!\n", proc_rank, proc_count);
-
+  
+  start_timer();
+  
   Setup_Grid();
 
   Solve();
 
   Write_Grid();
-  
-  // Before stopping the timer.
-  MPI_Finalize();
 
   print_timer();
 
   Clean_Up();
-
+  
+  MPI_Finalize();
+  
   return 0;
 }
