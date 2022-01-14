@@ -78,11 +78,11 @@ void print_timer()
   if (timer_on)
   {
     stop_timer();
-    printf("Elapsed processortime: %14.6f s\n", ticks * (1.0 / CLOCKS_PER_SEC));
+    printf("(%i / %i) Elapsed processortime: %14.6f s\n", proc_rank, proc_count, ticks * (1.0 / CLOCKS_PER_SEC));
     resume_timer();
   }
   else
-    printf("Elapsed processortime: %14.6f s\n", ticks * (1.0 / CLOCKS_PER_SEC));
+    printf("(%i / %i) Elapsed processortime: %14.6f s\n", proc_rank, proc_count, ticks * (1.0 / CLOCKS_PER_SEC));
 }
 
 void Debug(char *mesg, int terminate)
