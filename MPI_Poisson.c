@@ -28,6 +28,7 @@ int P;				/* total number of processes */
 int P_grid[2];		/* processgrid dimensions */
 MPI_Comm grid_comm;	/* grid communicator */
 MPI_Status status;
+MPI_Datatype border_type[2];
 
 /* global variables */
 int gridsize[2];
@@ -254,6 +255,19 @@ void Setup_Grid()
   }
 }
 
+void Setup_MPI_Datatypes()
+{
+  Debug("Setup_MPI_Datatypes", 0);
+  
+  /* Datatype for vertical data exchange (Y_DIR) */
+  MPI_Type_vector(dim[X_DIR] - 2, 1, dim[Y_DIR], MPI_DOUBLE, &border_type[Y_DIR]);
+  MPI_Type_commit(&border_type[Y_DIR]);
+  
+  /* Datatype for horizontal data exchange (X_DIR) */
+  MPI_Type_vector(dim[Y_DIR] - 2, 1, 1, MPI_DOUBLE, &border_type[X_DIR]);
+  MPI_Type_commit(&border_type[X_DIR]);
+}
+
 double Do_Step(int parity)
 {
   int x, y;
@@ -339,6 +353,7 @@ int main(int argc, char **argv)
   start_timer();
   
   Setup_Grid();
+  Setup_MPI_Datatypes();
 
   Solve();
 
