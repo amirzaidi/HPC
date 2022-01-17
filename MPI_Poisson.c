@@ -289,6 +289,31 @@ double Do_Step(int parity)
   return max_err;
 }
 
+void Exchange_Borders()
+{
+  Debug("Exchange_Borders", 0);
+  
+  MPI_Sendrecv(
+    &phi[1][1], 1, border_type[Y_DIR], proc_top, 0,
+    &phi[1][dim[Y_DIR] - 1], 1, border_type[Y_DIR], proc_bottom, 0,
+    grid_comm, &status); /* all traffic in direction top */
+  
+  MPI_Sendrecv(
+    &phi[1][dim[Y_DIR] - 2], 1, border_type[Y_DIR], proc_bottom, 1,
+    &phi[1][0], 1, border_type[Y_DIR], proc_top, 1,
+    grid_comm, &status); /* all traffic in direction bottom */
+  
+  MPI_Sendrecv(
+    &phi[1][1], 1, border_type[X_DIR], proc_left, 2,
+    &phi[dim[X_DIR] - 1][1], 1, border_type[X_DIR], proc_right, 2,
+    grid_comm, &status); /* all traffic in direction left */
+  
+  MPI_Sendrecv(
+    &phi[dim[X_DIR] - 2][1], 1, border_type[X_DIR], proc_right, 3,
+    &phi[0][1], 1, border_type[X_DIR], proc_left, 3,
+    grid_comm, &status); /* all traffic in direction right */
+}
+
 void Solve()
 {
   int count = 0;
@@ -304,9 +329,11 @@ void Solve()
   {
     Debug("Do_Step 0", 0);
     delta1 = Do_Step(0);
+    Exchange_Borders();
 
     Debug("Do_Step 1", 0);
     delta2 = Do_Step(1);
+    Exchange_Borders();
 
     delta = max(delta1, delta2);
     count++;
