@@ -272,6 +272,8 @@ double Do_Step(int parity)
 {
   int x, y;
   double old_phi;
+  double c;
+  const double omega = 1.5;
   double max_err = 0.0;
   
   int parity_offset = offset[X_DIR] + offset[Y_DIR];
@@ -282,10 +284,11 @@ double Do_Step(int parity)
       if ((x + y + parity_offset) % 2 == parity && source[x][y] != 1)
       {
         old_phi = phi[x][y];
-        phi[x][y] = (
+        c = (
           phi[x + 1][y] + phi[x - 1][y] +
           phi[x][y + 1] + phi[x][y - 1]
-        ) * 0.25;
+        ) * 0.25 - old_phi;
+        phi[x][y] = old_phi + omega * c;
   
         if (max_err < fabs(old_phi - phi[x][y]))
           max_err = fabs(old_phi - phi[x][y]);
