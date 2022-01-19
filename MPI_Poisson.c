@@ -281,11 +281,14 @@ double Do_Step(int parity)
     for (y = 1; y < dim[Y_DIR] - 1; y++)
       if ((x + y + parity_offset) % 2 == parity && source[x][y] != 1)
       {
-	old_phi = phi[x][y];
-	phi[x][y] = (phi[x + 1][y] + phi[x - 1][y] +
-		     phi[x][y + 1] + phi[x][y - 1]) * 0.25;
-	if (max_err < fabs(old_phi - phi[x][y]))
-	  max_err = fabs(old_phi - phi[x][y]);
+        old_phi = phi[x][y];
+        phi[x][y] = (
+          phi[x + 1][y] + phi[x - 1][y] +
+          phi[x][y + 1] + phi[x][y - 1]
+        ) * 0.25;
+  
+        if (max_err < fabs(old_phi - phi[x][y]))
+          max_err = fabs(old_phi - phi[x][y]);
       }
 
   return max_err;
