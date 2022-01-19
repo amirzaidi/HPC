@@ -273,7 +273,7 @@ double Do_Step(int parity)
   int x, y;
   double old_phi;
   double c;
-  const double omega = 1.5;
+  const double omega = 1.95;
   double max_err = 0.0;
   
   int parity_offset = offset[X_DIR] + offset[Y_DIR];
