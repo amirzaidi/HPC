@@ -10,6 +10,7 @@
 #include "mpi.h"
 
 #define DEBUG 0
+#define CG 1
 
 #define max(a,b) ((a)>(b)?a:b)
 
@@ -45,6 +46,12 @@ double **phi;			/* grid */
 int **source;			/* TRUE if subgrid element is a source */
 int offset[2];		/* grid start (x, y) */
 int dim[2];			/* grid dimensions */
+
+/* local CG related variables */
+#ifdef CG
+double **pCG, **rCG, **vCG;
+double global_residue;
+#endif
 
 void Setup_Grid();
 double Do_Step(int parity);
@@ -255,6 +262,43 @@ void Setup_Grid()
   }
 }
 
+void InitCG()
+{
+  int x, y;
+  double rdotr = 0;
+  
+  /* allocate memory for CG arrays */
+  pCG = malloc(dim[X_DIR] * sizeof(*pCG));
+  pCG[0] = malloc(dim[X_DIR] * dim[Y_DIR] * sizeof(**pCG));
+  for (x = 1; x < dim[X_DIR]; x++) pCG[x] = pCG[0] + x * dim[Y_DIR];
+  
+  rCG = malloc(dim[X_DIR] * sizeof(*rCG));
+  rCG[0] = malloc(dim[X_DIR] * dim[Y_DIR] * sizeof(**rCG));
+  for (x = 1; x < dim[X_DIR]; x++) rCG[x] = rCG[0] + x * dim[Y_DIR];
+  
+  vCG = malloc(dim[X_DIR] * sizeof(*vCG));
+  vCG[0] = malloc(dim[X_DIR] * dim[Y_DIR] * sizeof(**vCG));
+  for (x = 1; x < dim[X_DIR]; x++) vCG[x] = vCG[0] + x * dim[Y_DIR];
+  
+  /* initiate rCG and pCG */
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+    {
+      rCG[x][y] = 0;
+      if (source[x][y] != 1)
+        rCG[x][y] = (
+          phi[x + 1][y] + phi[x - 1][y] +
+          phi[x][y + 1] + phi[x][y - 1]
+        ) * 0.25;
+      
+      pCG[x][y] = rCG[x][y];
+      rdotr += rCG[x][y] * rCG[x][y];
+    }
+  
+  /* Obtain the global_residue also for the initial phi */
+  MPI_Allreduce(&rdotr, &global_residue, 1, MPI_DOUBLE, MPI_SUM, grid_comm);
+}
+
 void Setup_MPI_Datatypes()
 {
   Debug("Setup_MPI_Datatypes", 0);
@@ -297,6 +341,55 @@ double Do_Step(int parity)
   return max_err;
 }
 
+void Do_Step_CG()
+{
+  int x, y;
+  double a, g, global_pdotv, pdotv, global_new_rdotr, new_rdotr;
+  
+  /* Calculate "v" in interior of my grid (matrix-vector multiply) */
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+    {
+      vCG[x][y] = pCG[x][y];
+      if (source[x][y] != 1) /* only if point is not fixed */
+        vCG[x][y] -= (
+          pCG[x + 1][y] + pCG[x - 1][y] +
+          pCG[x][y + 1] + pCG[x][y - 1]
+        ) * 0.25;
+    }
+  
+  pdotv = 0;
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+      pdotv += pCG[x][y] * vCG[x][y];
+  
+  MPI_Allreduce(&pdotv, &global_pdotv, 1, MPI_DOUBLE, MPI_SUM, grid_comm);
+  
+  a = global_residue / global_pdotv;
+  
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+      phi[x][y] += a * pCG[x][y];
+  
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+      rCG[x][y] -= a * vCG[x][y];
+  
+  new_rdotr = 0;
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+      new_rdotr += rCG[x][y] * rCG[x][y];
+  
+  MPI_Allreduce(&new_rdotr, &global_new_rdotr, 1, MPI_DOUBLE, MPI_SUM, grid_comm);
+  
+  g = global_new_rdotr / global_residue;
+  global_residue = global_new_rdotr;
+  
+  for (x = 1; x < dim[X_DIR] - 1; x++)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+      pCG[x][y] = rCG[x][y] + g * pCG[x][y];
+}
+
 void Exchange_Borders()
 {
   Debug("Exchange_Borders", 0);
@@ -324,13 +417,22 @@ void Exchange_Borders()
 
 void Solve()
 {
+  Debug("Solve", 0);
   int count = 0;
+  
+  #ifdef CG
+  InitCG();
+  while (global_residue > precision_goal && count < max_iter)
+  {
+    Exchange_Borders();
+    Do_Step_CG();
+    count++;
+  }
+  #else
   double delta;
   double delta1, delta2;
   double global_delta;
-
-  Debug("Solve", 0);
-
+  
   /* give global_delta a higher value then precision_goal */
   global_delta = 2 * precision_goal;
 
@@ -348,6 +450,7 @@ void Solve()
     MPI_Allreduce(&delta, &global_delta, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
     count++;
   }
+  #endif
 
   printf("(%i / %i) Number of iterations: %i\n", proc_rank, P, count);
 }
@@ -380,6 +483,15 @@ void Clean_Up()
   free(phi);
   free(source[0]);
   free(source);
+  
+  #ifdef CG
+  free(pCG[0]);
+  free(pCG);
+  free(rCG[0]);
+  free(rCG);
+  free(vCG[0]);
+  free(vCG);
+  #endif
 }
 
 int main(int argc, char **argv)
