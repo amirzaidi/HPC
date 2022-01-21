@@ -280,8 +280,8 @@ double Do_Step(int parity)
 
   /* calculate interior of grid */
   for (x = 1; x < dim[X_DIR] - 1; x++)
-    for (y = 1 + ((1 + x + parity + parity_offset) % 2); y < dim[Y_DIR] - 1; y += 2)
-      if (source[x][y] != 1)
+    for (y = 1; y < dim[Y_DIR] - 1; y++)
+      if ((x + y + parity_offset) % 2 == parity && source[x][y] != 1)
       {
         old_phi = phi[x][y];
         c = (
