@@ -10,7 +10,6 @@
 #include "mpi.h"
 
 #define DEBUG 0
-#define SWEEP_COUNT 1
 
 #define max(a,b) ((a)>(b)?a:b)
 
@@ -329,7 +328,6 @@ void Solve()
   double delta;
   double delta1, delta2;
   double global_delta;
-  int i;
 
   Debug("Solve", 0);
 
@@ -338,18 +336,12 @@ void Solve()
 
   while (global_delta > precision_goal && count < max_iter)
   {
-    for (i = 0; i < SWEEP_COUNT; i++)
-    {
-      Debug("Do_Step 0", 0);
-      delta1 = Do_Step(0);
-    }
+    Debug("Do_Step 0", 0);
+    delta1 = Do_Step(0);
     Exchange_Borders();
-    
-    for (i = 0; i < SWEEP_COUNT; i++)
-    {
-      Debug("Do_Step 1", 0);
-      delta2 = Do_Step(1);
-    }
+
+    Debug("Do_Step 1", 0);
+    delta2 = Do_Step(1);
     Exchange_Borders();
 
     delta = max(delta1, delta2);
