@@ -342,7 +342,11 @@ void Solve()
     {
       Debug("Do_Step 0", 0);
       delta1 = Do_Step(0);
-      
+    }
+    Exchange_Borders();
+    
+    for (i = 0; i < SWEEP_COUNT; i++)
+    {
       Debug("Do_Step 1", 0);
       delta2 = Do_Step(1);
     }
