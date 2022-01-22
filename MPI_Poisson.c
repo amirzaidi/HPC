@@ -262,6 +262,7 @@ void Setup_Grid()
   }
 }
 
+#ifdef CG
 void InitCG()
 {
   int x, y;
@@ -298,6 +299,7 @@ void InitCG()
   /* Obtain the global_residue also for the initial phi */
   MPI_Allreduce(&rdotr, &global_residue, 1, MPI_DOUBLE, MPI_SUM, grid_comm);
 }
+#endif
 
 void Setup_MPI_Datatypes()
 {
@@ -341,6 +343,7 @@ double Do_Step(int parity)
   return max_err;
 }
 
+#ifdef CG
 void Do_Step_CG()
 {
   int x, y;
@@ -389,6 +392,7 @@ void Do_Step_CG()
     for (y = 1; y < dim[Y_DIR] - 1; y++)
       pCG[x][y] = rCG[x][y] + g * pCG[x][y];
 }
+#endif
 
 void Exchange_Borders()
 {
