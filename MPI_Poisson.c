@@ -394,6 +394,27 @@ void Exchange_Borders()
 {
   Debug("Exchange_Borders", 0);
   
+  #ifdef CG
+  MPI_Sendrecv(
+    &pCG[1][1], 1, border_type[Y_DIR], proc_top, 0,
+    &pCG[1][dim[Y_DIR] - 1], 1, border_type[Y_DIR], proc_bottom, 0,
+    grid_comm, &status); /* all traffic in direction top */
+  
+  MPI_Sendrecv(
+    &pCG[1][dim[Y_DIR] - 2], 1, border_type[Y_DIR], proc_bottom, 1,
+    &pCG[1][0], 1, border_type[Y_DIR], proc_top, 1,
+    grid_comm, &status); /* all traffic in direction bottom */
+  
+  MPI_Sendrecv(
+    &pCG[1][1], 1, border_type[X_DIR], proc_left, 2,
+    &pCG[dim[X_DIR] - 1][1], 1, border_type[X_DIR], proc_right, 2,
+    grid_comm, &status); /* all traffic in direction left */
+  
+  MPI_Sendrecv(
+    &pCG[dim[X_DIR] - 2][1], 1, border_type[X_DIR], proc_right, 3,
+    &pCG[0][1], 1, border_type[X_DIR], proc_left, 3,
+    grid_comm, &status); /* all traffic in direction right */
+  #else
   MPI_Sendrecv(
     &phi[1][1], 1, border_type[Y_DIR], proc_top, 0,
     &phi[1][dim[Y_DIR] - 1], 1, border_type[Y_DIR], proc_bottom, 0,
@@ -413,6 +434,7 @@ void Exchange_Borders()
     &phi[dim[X_DIR] - 2][1], 1, border_type[X_DIR], proc_right, 3,
     &phi[0][1], 1, border_type[X_DIR], proc_left, 3,
     grid_comm, &status); /* all traffic in direction right */
+  #endif
 }
 
 void Solve()
