@@ -1,0 +1,16 @@
+#!/bin/sh
+#SBATCH --time=00:00:05
+#SBATCH -N 1
+#SBATCH -C TitanX
+#SBATCH --gres=gpu:1
+
+. /etc/bashrc
+. /etc/profile.d/modules.sh
+
+module load cuda10.0/toolkit
+
+file='power_gpu'
+
+nvcc -o $file $file.cu
+
+./$file
