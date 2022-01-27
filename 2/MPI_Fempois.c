@@ -429,9 +429,16 @@ void Setup_MPI_Datatypes(FILE * f)
 
 void Exchange_Borders(double *vect)
 {
+  // Please finish this part to realize the purpose of data communication among neighboring processors. (Tip: the function "MPI_Sendrecv" needs to be used here.)
 
-    
-    // Please finsih this part to realize the purpose of data communication among neighboring processors. (Tip: the function "MPI_Sendrecv" needs to be used here.)
+  int i;
+  for (i = 0; i < N_neighb; i++)
+  {
+    MPI_Sendrecv(
+      vect, 1, send_type[i], proc_neighb[i], 0,
+      vect, 1, recv_type[i], proc_neighb[i], 0,
+      grid_comm, &status);
+  }
 }
 
 
