@@ -24,6 +24,8 @@ float* h_VecW = NULL;
 float* d_VecW = NULL;
 float* h_NormW = NULL;
 float* d_NormW = NULL;
+float* h_Lambda = NULL;
+float* d_Lambda = NULL;
 
 // Variables to change
 int GlobalSize = 5000;         // this is the dimension of the matrix, GlobalSize*GlobalSize
@@ -43,7 +45,7 @@ void checkCardVersion(void);
 // Kernels
 __global__ void Av_Product(float* g_MatA, float* g_VecV, float* g_VecW, int N);
 __global__ void FindNormW(float* g_VecW, float * g_NormW, int N);
-__global__ void NormalizeW(float* g_VecV,float* g_VecW, int N);
+__global__ void NormalizeW(float* g_VecW, float * g_NormW, float* g_VecV, int N);
 __global__ void ComputeLamda( float* g_VecV,float* g_VecW, float * g_Lamda,int N);
 
 /*****************************************************************************
@@ -274,6 +276,7 @@ int main(int argc, char** argv)
     size_t vec_size = N * sizeof(float);
     size_t mat_size = N * N * sizeof(float);
     size_t norm_size = sizeof(float);
+    size_t lambda_size = sizeof(float);
   
     // Allocate normalized value in host memory
     h_NormW = (float*)malloc(norm_size);
@@ -283,6 +286,8 @@ int main(int argc, char** argv)
     h_VecV = (float*)malloc(vec_size);
     // Allocate W vector for computations
     h_VecW = (float*)malloc(vec_size);
+    // Allocate Lambda.
+    h_Lambda = (float*)malloc(lambda_size);
 
 
     // Initialize input matrix
@@ -318,6 +323,7 @@ int main(int argc, char** argv)
     cudaMalloc((void**)&d_VecV, vec_size); 
     cudaMalloc((void**)&d_VecW, vec_size); // This vector is only used by the device
     cudaMalloc((void**)&d_NormW, norm_size); 
+    cudaMalloc((void**)&d_Lambda, lambda_size);
 
     //Copy from host memory to device memory
     cudaMemcpy(d_MatA, h_MatA, mat_size, cudaMemcpyHostToDevice);
@@ -325,10 +331,7 @@ int main(int argc, char** argv)
 	// cutilCheckError(cutStopTimer(timer_mem));
 	  
    //Power method loops
-    float OldLamda =0;
-    
-    Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-    cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
+    float OldLambda = 0;
 	
     // This part is the main code of the iteration process for the Power Method in GPU. 
     // Please finish this part based on the given code. Do not forget the command line 
@@ -344,7 +347,41 @@ int main(int argc, char** argv)
     //                                                                        //
     //  ///   //    ///     //    //      //      //        //       //   //  //
     
+    /*
+    Copied here for quick reference.
+    __global__ void Av_Product(float* g_MatA, float* g_VecV, float* g_VecW, int N);
+    __global__ void FindNormW(float* g_VecW, float* g_NormW, int N);
+    __global__ void NormalizeW(float* g_VecW, float* g_NormW, float* g_VecV, int N);
+    __global__ void ComputeLamda(float* g_VecV, float* g_VecW, float* g_Lamda, int N);
+    */
+    //power loop
+    printf("*************************************\n");
     
+    //power loop
+    for (int i = 0; i < max_iteration; i++)
+    {
+      Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
+      cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
+    
+      FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
+      cudaThreadSynchronize();
+      
+      NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
+      cudaThreadSynchronize();
+      
+      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
+      cudaThreadSynchronize();
+      
+      cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
+      printf("GPU lambda at %d: %f \n", i, *h_Lambda);
+      
+      // If residual is less than epsilon break
+      if(abs(OldLambda - *h_Lambda) < EPS)
+        break;
+      OldLambda = *h_Lambda;	
+    
+    }
+    printf("*************************************\n");
 
     clock_gettime(CLOCK_REALTIME,&t_end);
     runtime = (t_end.tv_sec - t_start.tv_sec) + 1e-9*(t_end.tv_nsec - t_start.tv_nsec);
@@ -365,6 +402,8 @@ void Cleanup(void)
         cudaFree(d_VecW);
 	  if (d_NormW)
 		    cudaFree(d_NormW);
+    if (d_Lambda)
+        cudaFree(d_Lambda);
 		
     // Free host memory
     if (h_MatA)
@@ -375,6 +414,8 @@ void Cleanup(void)
         free(h_VecW);
     if (h_NormW)
         free(h_NormW);
+    if (h_Lambda)
+        free(h_Lambda);
     
     exit(0);
 }
