@@ -142,7 +142,6 @@ __global__ void FindNormW(float* g_VecW, float * g_NormW, int N)
   sdata[tid] = sdata[tid] * sdata[tid];
   __syncthreads();
 
-  /*
   // do reduction in shared mem
   for (unsigned int s=blockDim.x / 2; s > 0; s = s >> 1) {
      if (tid < s) {
@@ -152,8 +151,6 @@ __global__ void FindNormW(float* g_VecW, float * g_NormW, int N)
   }
    // atomic operations:
   if (tid == 0) atomicAdd(g_NormW,sdata[0]);
-  */
-  atomicAdd(g_NormW, sdata[tid]);
 }
 
 __global__ void NormalizeW(float* g_VecW, float * g_NormW, float* g_VecV, int N)
@@ -163,14 +160,12 @@ __global__ void NormalizeW(float* g_VecW, float * g_NormW, float* g_VecV, int N)
   unsigned int tid = threadIdx.x;
   unsigned int globalid = blockIdx.x*blockDim.x + threadIdx.x;
 
-  //if(tid==0) sNormData[0] =  g_NormW[0];
-  float sNormData0 = g_NormW[0];
+  if(tid==0) sNormData[0] =  g_NormW[0];
   __syncthreads();
 
   // For thread ids greater than data space
   if (globalid < N) {
-     //g_VecV[globalid] = g_VecW[globalid]/sNormData[0];
-     g_VecV[globalid] = g_VecW[globalid]/sNormData0;
+     g_VecV[globalid] = g_VecW[globalid]/sNormData[0];
   }
 
 }
@@ -193,7 +188,6 @@ __global__ void ComputeLamda( float* g_VecV, float* g_VecW, float * g_Lamda,int 
   // each thread loads one element from global to shared mem
   __syncthreads();
 
-  /*
   // do reduction in shared mem
   for (unsigned int s=blockDim.x / 2; s > 0; s = s >> 1) {
      if (tid < s) {
@@ -203,8 +197,6 @@ __global__ void ComputeLamda( float* g_VecV, float* g_VecW, float * g_Lamda,int 
   }
    // atomic operations:
   if (tid == 0) atomicAdd(g_Lamda,sdataVW[0]);
-  */
-  atomicAdd(g_Lamda,sdataVW[tid]);
 }
 
 void CPU_AvProduct()
