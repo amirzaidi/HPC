@@ -29,7 +29,7 @@ float* d_Lambda = NULL;
 
 // Variables to change
 int GlobalSize = 5000;         // this is the dimension of the matrix, GlobalSize*GlobalSize
-int BlockSize = 32;            // number of threads in each block
+int BlockSize = BLOCK_SIZE;            // number of threads in each block
 const float EPS = 0.000005;    // tolerence of the error
 int max_iteration = 100;       // the maximum iteration steps
 
