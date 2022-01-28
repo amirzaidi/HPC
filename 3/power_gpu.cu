@@ -361,10 +361,12 @@ int main(int argc, char** argv)
     printf("*************************************\n");
     
     //AvProduct
-    //CPU_AvProduct(); // Replaced by GPU version.
+    CPU_AvProduct(); // Replaced by GPU version.
+    /*
     Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
     cudaThreadSynchronize();
     cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
+    */
   
     //power loop
     for (int i = 0; i < max_iteration; i++)
@@ -385,7 +387,8 @@ int main(int argc, char** argv)
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
       */
       
-      //CPU_NormalizeW(); // Replaced by GPU version.
+      CPU_NormalizeW(); // Replaced by GPU version.
+      /*
       cudaMemcpy(d_VecW, h_VecW, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
       FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
       cudaThreadSynchronize();
@@ -397,14 +400,19 @@ int main(int argc, char** argv)
       NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
       cudaThreadSynchronize();
       cudaMemcpy(h_VecV, d_VecV, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
+      */
       
-      //CPU_AvProduct(); // Replaced by GPU version.
+      CPU_AvProduct(); // Replaced by GPU version.
+      /*
       cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice);
       Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
       cudaThreadSynchronize();
       cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
+      */
       
       //*h_Lambda = CPU_ComputeLamda(); // Replaced by GPU version.
+      cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
+      cudaMemcpy(d_VecW, h_VecW, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
       ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
       cudaThreadSynchronize();
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
