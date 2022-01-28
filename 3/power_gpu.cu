@@ -389,6 +389,11 @@ int main(int argc, char** argv)
       cudaMemcpy(d_VecW, h_VecW, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
       FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
       cudaThreadSynchronize();
+      
+      cudaMemcpy(h_NormW, d_NormW, norm_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
+      *h_NormW = sqrt(*h_NormW);
+      cudaMemcpy(d_NormW, h_NormW, norm_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
+      
       NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
       cudaThreadSynchronize();
       cudaMemcpy(h_VecV, d_VecV, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
