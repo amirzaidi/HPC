@@ -385,7 +385,13 @@ int main(int argc, char** argv)
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
       */
       
-      CPU_NormalizeW();
+      //CPU_NormalizeW(); // Replaced by GPU version.
+      cudaMemcpy(d_VecW, h_VecW, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
+      FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
+      cudaThreadSynchronize();
+      NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
+      cudaThreadSynchronize();
+      cudaMemcpy(h_VecV, d_VecV, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
       
       //CPU_AvProduct(); // Replaced by GPU version.
       cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice);
