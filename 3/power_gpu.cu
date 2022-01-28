@@ -416,6 +416,7 @@ int main(int argc, char** argv)
       ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
       cudaThreadSynchronize();
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
+      cudaMemset(d_Lambda, 0, lambda_size);
       
       printf("GPU lambda at %d: %f \n", i, *h_Lambda);
       
