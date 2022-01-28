@@ -332,6 +332,9 @@ int main(int argc, char** argv)
 	  
    //Power method loops
     float OldLambda = 0;
+    
+    Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
+    cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
 	
     // This part is the main code of the iteration process for the Power Method in GPU. 
     // Please finish this part based on the given code. Do not forget the command line 
@@ -360,16 +363,16 @@ int main(int argc, char** argv)
     //power loop
     for (int i = 0; i < max_iteration; i++)
     {
-      Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-      cudaThreadSynchronize();
-      
-      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
-      cudaThreadSynchronize();
-    
       FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
       cudaThreadSynchronize();
       
       NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
+      cudaThreadSynchronize();
+      
+      Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
+      cudaThreadSynchronize();
+      
+      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
       cudaThreadSynchronize();
       
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
