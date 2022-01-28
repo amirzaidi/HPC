@@ -333,8 +333,8 @@ int main(int argc, char** argv)
    //Power method loops
     float OldLambda = 0;
     
-    Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-    cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
+    //Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
+    //cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
 	
     // This part is the main code of the iteration process for the Power Method in GPU. 
     // Please finish this part based on the given code. Do not forget the command line 
