@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 
     struct timespec t_start,t_end;
     double runtime;
-    //ParseArguments(argc, argv);
+    Arguments(argc, argv);
 		
     int N = GlobalSize;
     printf("Matrix size %d X %d \n", N, N);
