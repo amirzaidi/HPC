@@ -333,8 +333,8 @@ int main(int argc, char** argv)
    //Power method loops
     float OldLambda = 0;
     
-    //Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-    //cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
+    Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
+    cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
 	
     // This part is the main code of the iteration process for the Power Method in GPU. 
     // Please finish this part based on the given code. Do not forget the command line 
@@ -357,39 +357,13 @@ int main(int argc, char** argv)
     __global__ void NormalizeW(float* g_VecW, float* g_NormW, float* g_VecV, int N);
     __global__ void ComputeLamda(float* g_VecV, float* g_VecW, float* g_Lamda, int N);
     */
+    
     //power loop
     printf("*************************************\n");
-    
-    //AvProduct
-    CPU_AvProduct(); // Replaced by GPU version.
-    /*
-    Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-    cudaThreadSynchronize();
-    cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
-    */
   
     //power loop
     for (int i = 0; i < max_iteration; i++)
     {
-      /*
-      FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
-      cudaThreadSynchronize();
-      
-      NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
-      cudaThreadSynchronize();
-      
-      Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-      cudaThreadSynchronize();
-      
-      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
-      cudaThreadSynchronize();
-      
-      cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
-      */
-      
-      CPU_NormalizeW(); // Replaced by GPU version.
-      /*
-      cudaMemcpy(d_VecW, h_VecW, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
       FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
       cudaThreadSynchronize();
       
@@ -399,24 +373,14 @@ int main(int argc, char** argv)
       
       NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
       cudaThreadSynchronize();
-      cudaMemcpy(h_VecV, d_VecV, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
-      */
       
-      CPU_AvProduct(); // Replaced by GPU version.
-      /*
-      cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice);
       Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
       cudaThreadSynchronize();
-      cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
-      */
       
-      //*h_Lambda = CPU_ComputeLamda(); // Replaced by GPU version.
-      cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
-      cudaMemcpy(d_VecW, h_VecW, vec_size, cudaMemcpyHostToDevice); // Copy from previous CPU operation.
       ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
       cudaThreadSynchronize();
-      cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
-      cudaMemset(d_Lambda, 0, lambda_size);
+      cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
+      cudaMemset(d_Lambda, 0, lambda_size); // Set to zero.
       
       printf("GPU lambda at %d: %f \n", i, *h_Lambda);
       
