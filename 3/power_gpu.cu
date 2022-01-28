@@ -361,15 +361,15 @@ int main(int argc, char** argv)
     for (int i = 0; i < max_iteration; i++)
     {
       Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
-      cudaThreadSynchronize(); //Needed, kind of barrier to sychronize all threads
+      cudaThreadSynchronize();
+      
+      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
+      cudaThreadSynchronize();
     
       FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
       cudaThreadSynchronize();
       
       NormalizeW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, d_VecV, N);
-      cudaThreadSynchronize();
-      
-      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
       cudaThreadSynchronize();
       
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
