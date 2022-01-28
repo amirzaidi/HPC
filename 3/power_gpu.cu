@@ -388,9 +388,12 @@ int main(int argc, char** argv)
       cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice);
       Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
       cudaThreadSynchronize();
-      cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost);
+      cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost); // Copy for next CPU operation.
       
-      *h_Lambda = CPU_ComputeLamda();
+      //*h_Lambda = CPU_ComputeLamda(); // Replaced by GPU version.
+      ComputeLamda<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecV, d_VecW, d_Lambda, N);
+      cudaThreadSynchronize();
+      cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
       
       printf("GPU lambda at %d: %f \n", i, *h_Lambda);
       
