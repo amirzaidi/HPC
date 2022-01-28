@@ -329,6 +329,10 @@ int main(int argc, char** argv)
     cudaMemcpy(d_MatA, h_MatA, mat_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice);
 	// cutilCheckError(cutStopTimer(timer_mem));
+  
+    clock_gettime(CLOCK_REALTIME,&t_end);
+    runtime = (t_end.tv_sec - t_start.tv_sec) + 1e-9*(t_end.tv_nsec - t_start.tv_nsec);
+    printf("GPU: memcpy run time = %f secs.\n",runtime);
 	  
    //Power method loops
     float OldLambda = 0;
