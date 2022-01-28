@@ -360,9 +360,13 @@ int main(int argc, char** argv)
     //power loop
     printf("*************************************\n");
     
+    //AvProduct
+    CPU_AvProduct();
+  
     //power loop
     for (int i = 0; i < max_iteration; i++)
     {
+      /*
       FindNormW<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_VecW, d_NormW, N);
       cudaThreadSynchronize();
       
@@ -376,6 +380,12 @@ int main(int argc, char** argv)
       cudaThreadSynchronize();
       
       cudaMemcpy(h_Lambda, d_Lambda, lambda_size, cudaMemcpyDeviceToHost);
+      */
+      
+      CPU_NormalizeW();
+      CPU_AvProduct();
+      *h_Lambda = CPU_ComputeLamda();
+      
       printf("GPU lambda at %d: %f \n", i, *h_Lambda);
       
       // If residual is less than epsilon break
