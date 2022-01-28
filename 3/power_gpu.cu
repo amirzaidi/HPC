@@ -383,7 +383,13 @@ int main(int argc, char** argv)
       */
       
       CPU_NormalizeW();
-      CPU_AvProduct();
+      
+      //CPU_AvProduct(); // Replaced by GPU version.
+      cudaMemcpy(d_VecV, h_VecV, vec_size, cudaMemcpyHostToDevice);
+      Av_Product<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(d_MatA, d_VecV, d_VecW, N);
+      cudaThreadSynchronize();
+      cudaMemcpy(h_VecW, d_VecW, vec_size, cudaMemcpyDeviceToHost);
+      
       *h_Lambda = CPU_ComputeLamda();
       
       printf("GPU lambda at %d: %f \n", i, *h_Lambda);
