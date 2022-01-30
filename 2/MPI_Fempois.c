@@ -431,6 +431,8 @@ void Exchange_Borders(double *vect)
 {
   // Please finish this part to realize the purpose of data communication among neighboring processors. (Tip: the function "MPI_Sendrecv" needs to be used here.)
 
+  stop_timer();
+  
   int i;
   for (i = 0; i < N_neighb; i++)
   {
@@ -439,6 +441,8 @@ void Exchange_Borders(double *vect)
       vect, 1, recv_type[i], proc_neighb[i], 0,
       grid_comm, &status);
   }
+  
+  resume_timer();
 }
 
 
@@ -484,7 +488,9 @@ void Solve()
     for (i = 0; i < N_vert; i++)
       if (!(vert[i].type & TYPE_GHOST))
 	sub += r[i] * r[i];
+    stop_timer();
     MPI_Allreduce(&sub, &r1, 1, MPI_DOUBLE, MPI_SUM, grid_comm);
+    resume_timer();
 
     if (count == 0)
     {
@@ -515,7 +521,9 @@ void Solve()
     for (i = 0; i < N_vert; i++)
       if (!(vert[i].type & TYPE_GHOST))
 	sub += p[i] * q[i];
+    stop_timer();
     MPI_Allreduce(&sub, &a, 1, MPI_DOUBLE, MPI_SUM, grid_comm);
+    resume_timer();
     a = r1 / a;
 
     /* x = x + a*p */
